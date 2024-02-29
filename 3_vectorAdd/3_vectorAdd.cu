@@ -7,7 +7,9 @@ typedef float FLOAT;
 /* CUDA kernel function */
 __global__ void vec_add(FLOAT *x, FLOAT *y, FLOAT *z, int N)
 {
-    /* 2D grid */
+    /* 2D grid   实际上是2d的grid和1d的block，
+gridDim.x表示的block在2dgrid上的x方向上维度，所以blockIdx.y * gridDim.x可以看作是直到你所在的block前所有行的block，之后加上blockIdx.x
+就相当于是block in grid,之后再乘blockDim.x相当于是除了当前thread所在的block之前的所有block中的线程数量，最后加上当前的block中的线程索引就是全局线程索引了*/    
     int idx = (blockDim.x * (blockIdx.x + blockIdx.y * gridDim.x) + threadIdx.x);
     /* 1D grid */
     // int idx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -70,7 +72,8 @@ int main()
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&milliseconds, start, stop);  
-    
+
+
 	/* copy GPU result to CPU */
     cudaMemcpy(hz, dz, nbytes, cudaMemcpyDeviceToHost);
 
@@ -94,6 +97,10 @@ int main()
     free(hy);
     free(hz);
     free(hz_cpu_res);
+//需要销毁cuda事件 没写上去
 
+// 销毁 CUDA 事件
+cudaEventDestroy(start);
+cudaEventDestroy(stop);
     return 0;
 }
