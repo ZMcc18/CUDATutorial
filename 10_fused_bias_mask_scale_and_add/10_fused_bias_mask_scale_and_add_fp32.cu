@@ -27,7 +27,7 @@ __global__ void FusedBiasAddCUDAKernelFloat(FUNCTOR functor, const int elem_cnt,
 int main(){
     int ele_cnt = 1000;
     float scale = 0.5;
-    uint8_t* mask_tensor = new uint8_t[1000];
+    uint8_t* mask_tensor = new uint8_t[1000];  //用uint8_t 是为了省显存
     float* add_val = new float[1000];
     for (int i = 0; i < 1000; i++){
         mask_tensor[i] = (uint8_t)(i);
