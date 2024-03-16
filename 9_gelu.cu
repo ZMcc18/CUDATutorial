@@ -80,20 +80,20 @@ __global__ void FP16GeluCUDAKernel(const __half* x,
   int offset =
       static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x) * VecSize;
   // 循环读取向量的stride
-  int stride = static_cast<int>(blockDim.x * gridDim.x) * VecSize;
+  int stride = static_cast<int>(blockDim.x * gridDim.x) * VecSize;    //总的线程数*ecsize相当于一个grid可以cover到的总体数据长度
   GeluFunctor<half> gelu_fwd;
   __half y_reg[VecSize];
   for (; offset < n; offset += stride) {
     // 先强转为向量，再传入offset读取对应数据
     using ArrT = AlignedVector<__half, VecSize>;
-    const ArrT* in_arr = reinterpret_cast<const ArrT*>(x + offset);
+    const ArrT* in_arr = reinterpret_cast<const ArrT*>(x + offset);  //向量化读
     const __half* in = reinterpret_cast<const __half*>(in_arr);
 
     if (VecSize == 1){
         y_reg[0] = gelu_fwd(in[0]);
     } else {
       // Note: when you have ampere GPU, you can enable the "apply2" method replacing L99-L101 to get performance improvement by half2 intrinsic do vector computation.
-      //for (int i = 0; i < VecSize; i+=2) {
+      //for (int i = 0; i < VecSize; i+=2) {   //+=2是因为fp16 intrinsic只支持对两个fp16算子进行
       //gelu_fwd.apply2(y + offset, in[i]);
       //标量计算
         for (int i = 0; i < VecSize; i++) {
@@ -101,7 +101,7 @@ __global__ void FP16GeluCUDAKernel(const __half* x,
         }
     }
     // 将计算结果写回显存
-    *reinterpret_cast<ArrT*>(y + offset) = *reinterpret_cast<ArrT*>(y_reg);
+    *reinterpret_cast<ArrT*>(y + offset) = *reinterpret_cast<ArrT*>(y_reg); //向量化写
   }
 }
 
@@ -123,7 +123,7 @@ int main() {
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
 
-    auto is_aligned = [](const void* p, int alignment) {
+    auto is_aligned = [](const void* p, int alignment) {        //内存对齐操作
         return reinterpret_cast<uintptr_t>(p) % alignment == 0;
     };
                                                                       
